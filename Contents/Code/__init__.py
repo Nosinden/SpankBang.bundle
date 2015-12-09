@@ -428,7 +428,7 @@ def VideoPage(video_info):
     elif not match and video_removed:
         return MessageContainer('Warning', 'This video is no longer available.')
 
-    oc = ObjectContainer(title2=video_info['title'], header=header, message=message)
+    oc = ObjectContainer(title2=video_info['title'], header=header, message=message, no_cache=True)
 
     if not video_removed:
         oc.add(VideoClipObject(
