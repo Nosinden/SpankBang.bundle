@@ -1,0 +1,115 @@
+#!/usr/bin/env python
+
+"""SpankBang Service Code"""
+
+####################################################################################################
+def NormalizeURL(url):
+    """This function should return a 'normalised' version of the given URL. Plex uses the URL"""
+
+    return url
+
+####################################################################################################
+def MetadataObjectForURL(url):
+    """
+    This function should create and return a metadata object (for example, a VideoClipOb-
+    ject) and populate it with metadata from the given URL. Only the metadata should be
+    added here - the object's key and rating_key properties will be synthesised based on the URL.
+    """
+
+    Log.Debug('*' * 80)
+    Log.Debug('* MetadataObjectForURL = %s' %url)
+
+    html = HTML.ElementFromURL(url)
+    data = {}
+    for node in html.xpath('//main[@class="remodal-bg"][@id="container"]'):
+        data.update({'duration':  Datetime.MillisecondsFromString(node.xpath('.//p[@class="length"]/text()')[0].strip())})
+        data.update({'title': node.xpath('./h1/text()')[0].strip()})
+        j_node = node.xpath('./script[@type="text/javascript"]')[0].text_content().split(';')
+        data.update({'thumb': 'http:' + [Regex('\'(.+?)\'').search(item).group(1) for item in j_node if 'cover_image' in item][0]})
+
+        for node2 in node.xpath('.//div[@class="content"][@id="about"]/div[@class="info"]'):
+            summary = node2.xpath('./p[@class="desc"]/text()')
+            if summary:
+                summary = summary[0].strip()
+            else:
+                summary = ''
+
+            genres = node2.xpath('./p[@class="cat"]')
+            if genres:
+                genres = genres[0].text_content().strip().replace('Category:', '').replace(' ', '').split(',')
+            else:
+                genres = []
+
+            data.update({'summary': summary})
+            data.update({'genres': genres})
+
+    Log.Debug('* data = %s' %data)
+
+    vco = VideoClipObject(
+        title=data['title'],
+        summary=data['summary'],
+        duration=data['duration'],
+        genres=data['genres'],
+        content_rating='X',
+        thumb=data['thumb'])
+
+    return vco
+
+####################################################################################################
+def MediaObjectsForURL(url):
+    """
+    This function should create and return a list of media objects and part objects representing
+    the media available at the given URL. Callbacks may be used if obtaining the final media
+    location requires additional computation.
+    """
+
+    Log.Debug('* MediaObjectsForURL = %s' %url)
+
+    html = HTML.ElementFromURL(url)
+
+    fmt_list = []
+    mo = []
+
+    for fmt_text in html.xpath('//div[@class="left-set"]/span/span/text()'):
+        if 'p' in fmt_text:
+            fmt_list.append(fmt_text.replace('HD', '').strip())
+
+    for fmt in fmt_list:
+        mo.append(MediaObject(
+            parts=[PartObject(key=Callback(PlayVideo, url=url, fmt=fmt))],
+            video_resolution=fmt[:-1],
+            container=Container.MP4,
+            video_codec=VideoCodec.H264,
+            audio_codec=AudioCodec.AAC,
+            audio_channels=2,
+            optimized_for_streaming = True))
+
+    return mo
+
+####################################################################################################
+#@indirect
+def PlayVideo(url, fmt, **kwargs):
+    """Format the video url depending of version"""
+
+    html = HTML.ElementFromURL(url)
+
+    Log.Debug('*' * 80)
+
+    data = {}
+    for node in html.xpath('//main[@class="remodal-bg"][@id="container"]'):
+        j_node = node.xpath('./script[@type="text/javascript"]')[0].text_content().split(';')
+        for item in j_node:
+            if 'stream_key' in item:
+                data.update({'stream_key': Regex('\'(.+?)\'').search(item).group(1)})
+            elif 'stream_id' in item:
+                data.update({'stream_id': Regex('\'(.+?)\'').search(item).group(1)})
+
+    Log.Debug('* data = %s' %data)
+
+    video_url = 'http://spankbang.com/_%s/%s/title/%s__mp4' %(data['stream_id'], data['stream_key'], fmt)
+
+    Log.Debug('* video_url = %s' %video_url)
+    Log.Debug('*' * 80)
+
+    return Redirect(video_url)
+    #return IndirectResponse(VideoClipObject, key=video_url)

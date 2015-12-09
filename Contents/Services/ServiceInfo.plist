@@ -1,0 +1,41 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple Computer//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+  <key>URL</key>
+  <dict>
+    <key>SpankBang</key>
+    <dict>
+      <key>Identifier</key>
+      <string>com.plexapp.plugins.spankbang</string>
+      <key>URLPatterns</key>
+      <array>
+        <string>^https?://(?:[^/]+\.|)?spankbang\.com/\w+?/video/.+$</string>
+      </array>
+      <key>TestURLs</key>
+      <array>
+        <string>http://spankbang.com/1c7t/video/sunny+leone+fucked+hard+on+red+sofa+xxx</string>
+        <string>http://spankbang.com/4dx9/video/onsd+899a+utsunomiya+shion</string>
+        <string>http://spankbang.com/3jad/video/taboo+2+classic+xxx</string>
+        <string>http://spankbang.com/2myl/video/best+stepmom+zoey+holloway</string>
+        <string>http://spankbang.com/492o/video/do+as+i+say</string>
+        <string>http://spankbang.com/3vvn/video/fantasy+solo</string>
+        <string>http://la.spankbang.com/3vvn/video/fantasy+solo</string>
+        <string>http://es.spankbang.com/1c7t/video/sunny+leone+fucked+hard+on+red+sofa+xxx</string>
+        <string>http://br.spankbang.com/4dx9/video/onsd+899a+utsunomiya+shion</string>
+        <string>http://pt.spankbang.com/3jad/video/taboo+2+classic+xxx</string>
+        <string>http://fr.spankbang.com/2myl/video/best+stepmom+zoey+holloway</string>
+        <string>http://de.spankbang.com/492o/video/do+as+i+say</string>
+        <string>http://nl.spankbang.com/1c7t/video/sunny+leone+fucked+hard+on+red+sofa+xxx</string>
+        <string>http://pl.spankbang.com/4dx9/video/onsd+899a+utsunomiya+shion</string>
+        <string>http://tr.spankbang.com/3jad/video/taboo+2+classic+xxx</string>
+        <string>http://it.spankbang.com/2myl/video/best+stepmom+zoey+holloway</string>
+        <string>http://in.spankbang.com/492o/video/do+as+i+say</string>
+        <string>http://th.spankbang.com/3vvn/video/fantasy+solo</string>
+        <string>http://ms.spankbang.com/1c7t/video/sunny+leone+fucked+hard+on+red+sofa+xxx</string>
+        <string>http://id.spankbang.com/4dx9/video/onsd+899a+utsunomiya+shion</string>
+      </array>
+    </dict>
+  </dict>
+</dict>
+</plist>
