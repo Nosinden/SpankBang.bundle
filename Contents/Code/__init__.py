@@ -3,7 +3,7 @@
 #                                     SpankBang Plex Channel                                       #
 #                                                                                                  #
 ####################################################################################################
-#from updater import Updater
+from updater import Updater
 
 TITLE = L('title')
 PREFIX = '/video/spankbang'
@@ -36,7 +36,7 @@ SEARCH_LENGTH = [
 
 ####################################################################################################
 def Start():
-    HTTP.CacheTime = 300  # 5mins
+    HTTP.CacheTime = CACHE_1HOUR
 
     ObjectContainer.title1 = TITLE
     ObjectContainer.art = R(ART)
@@ -57,7 +57,7 @@ def MainMenu():
 
     oc = ObjectContainer(title2=TITLE)
 
-    #Updater(PREFIX + '/updater', oc)
+    Updater(PREFIX + '/updater', oc)
 
     oc.add(DirectoryObject(key=Callback(MainList, title='Explore'), title='Explore', thumb=R(ICON_LIST)))
     oc.add(DirectoryObject(key=Callback(MainList, title='Popular Videos'), title='Popular Videos', thumb=R(ICON_POP)))
