@@ -55,7 +55,7 @@ def Start():
 def MainMenu():
     """Setup Main Menu, Includes Updater"""
 
-    oc = ObjectContainer(title2=TITLE)
+    oc = ObjectContainer(title2=TITLE, no_cache=True)
 
     Updater(PREFIX + '/updater', oc)
 
