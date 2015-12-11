@@ -117,7 +117,7 @@ def CategoryList(title):
 
     url = BASE_URL + '/categories'
 
-    html = HTML.ElementFromURL(url, cachTime=CACHE_TIME)
+    html = HTML.ElementFromURL(url, cacheTime=CACHE_TIME)
     for genre_node in html.xpath('//h1[@class="alt"][text()="All porn categories"]/following-sibling::div[@class="categories"]/a'):
         chref = genre_node.get('href')
         img = genre_node.xpath('./img')[0].get('src')
@@ -283,7 +283,7 @@ def SearchCategoryList(title, href):
         title='Any Category'))
 
     url = BASE_URL + href
-    html = HTML.ElementFromURL(url, cachTime=CACHE_TIME)
+    html = HTML.ElementFromURL(url, cacheTime=CACHE_TIME)
     title = title.replace('Categories', 'Category')
     for c in html.xpath('//p[@class="t cat tt"]/a'):
         chref = c.get('href').replace(' ', '%20')
@@ -361,7 +361,7 @@ def DirectoryList(title, href, page):
 
     url = BASE_URL + href
 
-    html = HTML.ElementFromURL(url, cachTime=CACHE_TIME)
+    html = HTML.ElementFromURL(url, cacheTime=CACHE_TIME)
 
     if html.xpath('//main[@class="remodal-bg"]//h1[text()="No results"]'):
         search = url.split('/')[-1]
@@ -416,7 +416,7 @@ def VideoPage(video_info):
     Includes Similar Videos and Bookmark Option
     """
 
-    html = HTML.ElementFromURL(video_info['url'], cachTime=CACHE_TIME)
+    html = HTML.ElementFromURL(video_info['url'], cacheTime=CACHE_TIME)
 
     bm = Dict['Bookmarks']
     header = None
@@ -501,7 +501,7 @@ def SimilarVideos(title, info):
 def AddBookmark(video_info):
     """Add Bookmark"""
 
-    html = HTML.ElementFromURL(video_info['url'], cachTime=CACHE_TIME)
+    html = HTML.ElementFromURL(video_info['url'], cacheTime=CACHE_TIME)
 
     bm = Dict['Bookmarks']
     summary = ''
