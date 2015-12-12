@@ -24,8 +24,9 @@ ORDER = [
     ('order=rated', 'Most Liked Videos'), ('order=longest', 'Longest Videos')
     ]
 PERIOD = [
-    ('period=today', 'Today'), ('period=week', 'This Week'), ('period=month', 'This Month'),
-    ('period=season', 'Three Months'), ('period=year', 'This Year')
+    ('', 'Any Time'), ('period=today', 'Today'), ('period=week', 'This Week'),
+    ('period=month', 'This Month'), ('period=season', 'Three Months'),
+    ('period=year', 'This Year')
     ]
 SEARCH_ORDER = [
     ('order=top', 'Popular Videos'), ('order=new', 'New Videos'), ('order=hot', 'Hot Videos')
@@ -37,7 +38,6 @@ SEARCH_LENGTH = [
 
 ####################################################################################################
 def Start():
-    #HTTP.CacheTime = CACHE_1HOUR
     HTTP.CacheTime = 0
 
     ObjectContainer.title1 = TITLE

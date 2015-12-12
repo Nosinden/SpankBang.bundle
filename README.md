@@ -24,6 +24,8 @@ How To Install
 ChangeLog
 ---------
 
+**1.0.3** - 12/12/15 - Added _Any Time_ to Period List
+
 **1.0.2** - 12/10/15 - Added noCache, so bookmarks display properly
 
 **1.0.1** - 12/09/15 - Added [Updater](https://github.com/kolsys/plex-channel-updater)
