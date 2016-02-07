@@ -4,6 +4,7 @@
 #                                                                                                  #
 ####################################################################################################
 from updater import Updater
+from DumbTools import DumbKeyboard
 
 TITLE = L('title')
 PREFIX = '/video/spankbang'
@@ -61,14 +62,26 @@ def MainMenu():
 
     Updater(PREFIX + '/updater', oc)
 
-    oc.add(DirectoryObject(key=Callback(MainList, title='Explore'), title='Explore', thumb=R(ICON_LIST)))
-    oc.add(DirectoryObject(key=Callback(MainList, title='Popular Videos'), title='Popular Videos', thumb=R(ICON_POP)))
-    oc.add(DirectoryObject(key=Callback(MainList, title='Most Liked Videos'), title='Most Liked Videos', thumb=R(ICON_LIKED)))
+    oc.add(DirectoryObject(
+        key=Callback(MainList, title='Explore'), title='Explore', thumb=R(ICON_LIST)
+        ))
+    oc.add(DirectoryObject(
+        key=Callback(MainList, title='Popular Videos'), title='Popular Videos', thumb=R(ICON_POP)
+        ))
+    oc.add(DirectoryObject(
+        key=Callback(MainList, title='Most Liked Videos'),
+        title='Most Liked Videos', thumb=R(ICON_LIKED)
+        ))
     oc.add(DirectoryObject(key=Callback(MyBookmarks), title='My Bookmarks', thumb=R(ICON_BM)))
     #oc.add(PrefsObject(title='Preferences'))
-    oc.add(InputDirectoryObject(
-        key=Callback(Search),
-        title='Search', summary='Search SpankBang', prompt='Search for...', thumb=R('icon-search.png')))
+    if Client.Product in DumbKeyboard.clients:
+        DumbKeyboard(PREFIX, oc, Search, dktitle='Search', dkthumb=R('icon-search.png'))
+    else:
+        oc.add(InputDirectoryObject(
+            key=Callback(Search),
+            title='Search', summary='Search SpankBang',
+            prompt='Search for...', thumb=R('icon-search.png')
+            ))
 
     return oc
 
@@ -176,7 +189,7 @@ def CategoryOptList(title, href):
     return oc
 
 ####################################################################################################
-@route(PREFIX + '/periodlist')
+@route(PREFIX + '/periodlist', search=bool)
 def PeriodList(title, href, search=False):
     """
     Setup period option
@@ -386,7 +399,7 @@ def DirectoryList(title, href, page):
             vtitle = name + ' (HD)'
         else:
             vtitle = name
-        duration = 60000 * int(a_node.xpath('./span[@class="len"]/text()')[0].strip())
+        duration = 60000 * int(node.xpath('./ul/li')[0].text_content().strip())
         vid = vhref.split('/')[-1]
 
         video_info = {
@@ -462,7 +475,7 @@ def VideoPage(video_info):
                     'id': vid, 'title': name, 'duration': duration,
                     'thumb': thumb, 'url': vhref})
         oc.add(DirectoryObject(
-            key=Callback(SimilarVideos, title='Videos Similar to \"%s\"' %video_info['title'], info=info),
+            key=Callback(SimilarVideos, title='Similar Videos', info=info),
             title='Similar Videos', thumb=info[0]['thumb']))
 
     if match:

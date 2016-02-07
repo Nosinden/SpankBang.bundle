@@ -17,41 +17,36 @@ def MetadataObjectForURL(url):
     """
 
     Log.Debug('*' * 80)
-    Log.Debug('* MetadataObjectForURL = %s' %url)
+    Log.Debug('* MetadataObjectForURL   = %s' %url)
 
     html = HTML.ElementFromURL(url)
-    data = {}
-    for node in html.xpath('//main[@class="remodal-bg"][@id="container"]'):
-        data.update({'duration':  Datetime.MillisecondsFromString(node.xpath('.//p[@class="length"]/text()')[0].strip())})
-        data.update({'title': node.xpath('./h1/text()')[0].strip()})
-        j_node = node.xpath('./script[@type="text/javascript"]')[0].text_content().split(';')
-        data.update({'thumb': 'http:' + [Regex('\'(.+?)\'').search(item).group(1) for item in j_node if 'cover_image' in item][0]})
+    time_stamp = int(Datetime.TimestampFromDatetime(Datetime.Now()))
 
-        for node2 in node.xpath('.//div[@class="content"][@id="about"]/div[@class="info"]'):
-            summary = node2.xpath('./p[@class="desc"]/text()')
-            if summary:
-                summary = summary[0].strip()
-            else:
-                summary = ''
+    for node in html.xpath('//section[@class="details"]'):
+        duration = Datetime.MillisecondsFromString(node.xpath('.//div[@class="right_side"]/span')[0].text_content().strip())
+        title = node.xpath('./h1/text()')[0].strip()
+        summary = node.xpath('.//p/text()')[1].strip()
+        genres = node.xpath('.//p[@class="cat"]/a/text()')
+    if summary == 'Category:':
+        summary = None
 
-            genres = node2.xpath('./p[@class="cat"]')
-            if genres:
-                genres = genres[0].text_content().strip().replace('Category:', '').replace(' ', '').split(',')
-            else:
-                genres = []
+    thumb = html.xpath('//meta[@property="og:image"]/@content')[0]
+    art = '/:/plugins/com.plexapp.plugins.spankbang/resources/art-default.jpg?t=%s' %time_stamp
 
-            data.update({'summary': summary})
-            data.update({'genres': genres})
-
-    Log.Debug('* data = %s' %data)
+    Log.Debug('* title                  = %s' %title)
+    Log.Debug('* duration               = %i' %duration)
+    Log.Debug('* genres                 = %s' %genres)
+    Log.Debug('* summary                = %s' %summary)
+    Log.Debug('*' * 80)
 
     vco = VideoClipObject(
-        title=data['title'],
-        summary=data['summary'],
-        duration=data['duration'],
-        genres=data['genres'],
+        title=title,
+        summary=summary,
+        duration=duration,
+        genres=genres,
         content_rating='X',
-        thumb=data['thumb'])
+        thumb=thumb,
+        art=art)
 
     return vco
 
@@ -63,31 +58,32 @@ def MediaObjectsForURL(url):
     location requires additional computation.
     """
 
-    Log.Debug('* MediaObjectsForURL = %s' %url)
+    Log.Debug('* MediaObjectsForURL     = %s' %url)
 
     html = HTML.ElementFromURL(url)
 
     fmt_list = []
     mo = []
+    bit_dict = {'720p': 1442, '480p': 665, '240p': 141}
 
-    for fmt_text in html.xpath('//div[@class="left-set"]/span/span/text()'):
-        if 'p' in fmt_text:
-            fmt_list.append(fmt_text.replace('HD', '').strip())
+    for fmt_text in html.xpath('//div[@class="player_wrapper"]/nav[@class="toolbar"]/ul/li/@class'):
+        if 'q_' in fmt_text:
+            fmt_list.append(fmt_text.replace('q_', '').strip())
 
     for fmt in fmt_list:
         mo.append(MediaObject(
             parts=[PartObject(key=Callback(PlayVideo, url=url, fmt=fmt))],
             video_resolution=fmt[:-1],
+            bitrate=bit_dict[fmt],
             container=Container.MP4,
             video_codec=VideoCodec.H264,
             audio_codec=AudioCodec.AAC,
             audio_channels=2,
-            optimized_for_streaming = True))
+            optimized_for_streaming=True))
 
     return mo
 
 ####################################################################################################
-#@indirect
 def PlayVideo(url, fmt, **kwargs):
     """Format the video url depending of version"""
 
@@ -96,20 +92,26 @@ def PlayVideo(url, fmt, **kwargs):
     Log.Debug('*' * 80)
 
     data = {}
-    for node in html.xpath('//main[@class="remodal-bg"][@id="container"]'):
-        j_node = node.xpath('./script[@type="text/javascript"]')[0].text_content().split(';')
-        for item in j_node:
-            if 'stream_key' in item:
-                data.update({'stream_key': Regex('\'(.+?)\'').search(item).group(1)})
-            elif 'stream_id' in item:
-                data.update({'stream_id': Regex('\'(.+?)\'').search(item).group(1)})
+    for node in html.xpath('//script[@type="text/javascript"]'):
+        j_text = node.text_content()
+        j_test = Regex('var\ stream_key').search(j_text)
+        if j_test:
+            j_node = j_text.split(';')
+            for item in j_node:
+                if 'stream_key' in item:
+                    data.update({'stream_key': Regex('\'(.+?)\'').search(item).group(1)})
+                elif 'stream_id' in item:
+                    data.update({'stream_id': Regex('\'(.+?)\'').search(item).group(1)})
 
-    Log.Debug('* data = %s' %data)
+    Log.Debug('* data       = %s' %data)
 
     video_url = 'http://spankbang.com/_%s/%s/title/%s__mp4' %(data['stream_id'], data['stream_key'], fmt)
 
-    Log.Debug('* video_url = %s' %video_url)
+    Log.Debug('* video_url  = %s' %video_url)
+    if not data['stream_id']:
+        Log.Error('* Stream Id not found')
+        Log.Debug('*' * 80)
+        raise Ex.MediaNotAvailable
     Log.Debug('*' * 80)
 
     return Redirect(video_url)
-    #return IndirectResponse(VideoClipObject, key=video_url)
