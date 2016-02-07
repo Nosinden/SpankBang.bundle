@@ -9,7 +9,8 @@ from DumbTools import DumbKeyboard
 TITLE = L('title')
 PREFIX = '/video/spankbang'
 BASE_URL = 'http://spankbang.com'
-CACHE_TIME = CACHE_1HOUR
+#CACHE_TIME = CACHE_1HOUR
+CACHE_TIME = 0
 
 ICON = 'icon-default.png'
 ICON_BM = 'icon-bookmarks.png'
@@ -131,7 +132,7 @@ def CategoryList(title):
     url = BASE_URL + '/categories'
 
     html = HTML.ElementFromURL(url, cacheTime=CACHE_TIME)
-    for genre_node in html.xpath('//h1[@class="alt"][text()="All porn categories"]/following-sibling::div[@class="categories"]/a'):
+    for genre_node in html.xpath('//h1[text()="All porn categories"]/following-sibling::div[@class="categories"]/a'):
         chref = genre_node.get('href')
         img = genre_node.xpath('./img')[0].get('src')
         name = genre_node.xpath('./span/text()')[0]
@@ -376,12 +377,12 @@ def DirectoryList(title, href, page):
 
     html = HTML.ElementFromURL(url, cacheTime=CACHE_TIME)
 
-    if html.xpath('//main[@class="remodal-bg"]//h1[text()="No results"]'):
+    if html.xpath('//h1[text()="No results"]'):
         search = url.split('/')[-1]
         return MessageContainer('Search Warning',
             'Sorry... your search for \"%s\" returned no videos. Repeat your search with another keyword. Search only works with english words.' %search)
 
-    nextpg_node = html.xpath('//nav[@class="paginate-bar"]/a[@class="next"]')
+    nextpg_node = html.xpath('//li[@class="next"]/a')
     if page == 1 and not nextpg_node:
         main_title = title
     else:
@@ -446,8 +447,21 @@ def VideoPage(video_info):
     oc = ObjectContainer(title2=video_info['title'], header=header, message=message, no_cache=True)
 
     if not video_removed:
+        for node in html.xpath('//section[@class="details"]'):
+            summary_node = node.xpath('.//p/text()')
+            if len(summary_node) > 1:
+                summary = summary_node[1].strip()
+                if summary == 'Category:':
+                    summary = ''
+            else:
+                summary = ''
+            video_info.update({'summary': summary})
+            video_info.update({'genres': node.xpath('.//p[@class="cat"]/a/text()')})
+
         oc.add(VideoClipObject(
             title=video_info['title'],
+            summary=video_info['summary'],
+            genres=video_info['genres'],
             duration=video_info['duration'],
             thumb=video_info['thumb'],
             url=video_info['url']))
@@ -519,20 +533,15 @@ def AddBookmark(video_info):
     bm = Dict['Bookmarks']
     summary = ''
     genres = ''
-    for node in html.xpath('//div[@class="content"][@id="about"]/div[@class="info"]'):
-        summary = node.xpath('./p[@class="desc"]/text()')
-        if summary:
-            summary = summary[0].strip()
-
-        genres = node.xpath('./p[@class="cat"]')
-        if genres:
-            genre_list = genres[0].text_content().strip().replace('Category:', '').replace(' ', '').split(',')
-            genres = ' '.join([g.replace(' ', '_') for g in genre_list])
+    if video_info['genres']:
+        genres = ' '.join([g.replace(' ', '_') for g in video_info['genres']])
+    if video_info['summary']:
+        summary = video_info['summary']
 
     new_bookmark = {
         'id': video_info['id'], 'url': video_info['url'], 'title': video_info['title'],
-        'duration': video_info['duration'], 'summary': summary if summary else '',
-        'genres': genres if genres else '', 'thumb': video_info['thumb']
+        'duration': video_info['duration'], 'summary': summary,
+        'genres': genres, 'thumb': video_info['thumb']
         }
 
     if not bm:

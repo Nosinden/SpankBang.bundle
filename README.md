@@ -24,7 +24,9 @@ How To Install
 ChangeLog
 ---------
 
-**1.0.4** - 02/07/16 - Adapted to site changes. Added DumbTools for _Dumb_ clients.
+**1.0.5** - 02/07/16 - Fixed summary, gernes, and Categories.
+
+**1.0.4** - 02/07/16 - Adapted to site changes. Added [DumbTools](https://github.com/coryo/DumbTools-for-Plex) for _Dumb_ clients.
 
 **1.0.3** - 12/12/15 - Added _Any Time_ to Period List
 
