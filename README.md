@@ -24,6 +24,8 @@ How To Install
 ChangeLog
 ---------
 
+**1.0.4** - 02/07/16 - Adapted to site changes. Added DumbTools for _Dumb_ clients.
+
 **1.0.3** - 12/12/15 - Added _Any Time_ to Period List
 
 **1.0.2** - 12/10/15 - Added noCache, so bookmarks display properly
