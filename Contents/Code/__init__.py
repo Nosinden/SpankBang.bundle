@@ -9,8 +9,7 @@ from DumbTools import DumbKeyboard
 TITLE = L('title')
 PREFIX = '/video/spankbang'
 BASE_URL = 'http://spankbang.com'
-#CACHE_TIME = CACHE_1HOUR
-CACHE_TIME = 0
+CACHE_TIME = CACHE_1HOUR
 
 ICON = 'icon-default.png'
 ICON_BM = 'icon-bookmarks.png'
