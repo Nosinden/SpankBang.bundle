@@ -21,10 +21,10 @@ def MetadataObjectForURL(url):
 
     html = HTML.ElementFromURL(url)
     time_stamp = int(Datetime.TimestampFromDatetime(Datetime.Now()))
+    title = html.xpath('//h1/text()')[0].strip()
 
     for node in html.xpath('//section[@class="details"]'):
         duration = Datetime.MillisecondsFromString(node.xpath('.//div[@class="right_side"]/span')[0].text_content().strip())
-        title = node.xpath('./h1/text()')[0].strip()
         summary_node = node.xpath('.//p/text()')
         if len(summary_node) > 1:
             summary = summary_node[1].strip()
