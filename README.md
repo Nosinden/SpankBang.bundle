@@ -24,6 +24,8 @@ How To Install
 ChangeLog
 ---------
 
+**1.0.6** - 02/08/16 - Fixed _title_ error in ServiceCode
+
 **1.0.5** - 02/07/16 - Fixed summary, genres, and Categories. Fixed video format error for low resolution videos.
 
 **1.0.4** - 02/07/16 - Adapted to site changes. Added [DumbTools](https://github.com/coryo/DumbTools-for-Plex) for _Dumb_ clients.
