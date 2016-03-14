@@ -3,6 +3,7 @@
 #                                     SpankBang Plex Channel                                       #
 #                                                                                                  #
 ####################################################################################################
+import messages
 from updater import Updater
 from DumbTools import DumbKeyboard
 
@@ -37,6 +38,8 @@ SEARCH_LENGTH = [
     ('length=short', 'Short (1-5min)')
     ]
 
+MC = messages.NewMessageContainer(PREFIX, TITLE)
+
 ####################################################################################################
 def Start():
     HTTP.CacheTime = 0
@@ -50,8 +53,6 @@ def Start():
     InputDirectoryObject.art = R(ART)
 
     VideoClipObject.art = R(ART)
-
-    #ValidatePrefs()
 
 ####################################################################################################
 @handler(PREFIX, TITLE, thumb=ICON, art=ART)
@@ -73,7 +74,7 @@ def MainMenu():
         title='Most Liked Videos', thumb=R(ICON_LIKED)
         ))
     oc.add(DirectoryObject(key=Callback(MyBookmarks), title='My Bookmarks', thumb=R(ICON_BM)))
-    #oc.add(PrefsObject(title='Preferences'))
+
     if Client.Product in DumbKeyboard.clients:
         DumbKeyboard(PREFIX, oc, Search, dktitle='Search', dkthumb=R('icon-search.png'))
     else:
@@ -84,14 +85,6 @@ def MainMenu():
             ))
 
     return oc
-
-####################################################################################################
-@route(PREFIX + '/validateprefs')
-def ValidatePrefs():
-    """
-    Validate Prefs
-    No Prefs to validate yet
-    """
 
 ####################################################################################################
 @route(PREFIX + '/mainlist')
@@ -132,7 +125,7 @@ def CategoryList(title):
 
     html = HTML.ElementFromURL(url, cacheTime=CACHE_TIME)
     for genre_node in html.xpath('//h1[text()="All porn categories"]/following-sibling::div[@class="categories"]/a'):
-        chref = genre_node.get('href')
+        chref = genre_node.get('href').split('?')[0]
         img = genre_node.xpath('./img')[0].get('src')
         name = genre_node.xpath('./span/text()')[0]
         oc.add(DirectoryObject(
@@ -330,6 +323,7 @@ def SearchLengthList(title, href):
 def Search(query=''):
     """Search SpankBang"""
 
+    query = query.strip()
     search = Regex('[^a-zA-Z0-9-_*.]').sub(' ', String.StripDiacritics(query))
     href = '/s/%s/' %String.Quote(search, usePlus=True)
     title = 'Search | %s' %search
@@ -342,7 +336,7 @@ def MyBookmarks():
     """List Custom Bookmarks"""
     bm = Dict['Bookmarks']
     if not bm:
-        return MessageContainer('Bookmarks', 'Bookmark List Empty')
+        return MC.message_container('Bookmarks', 'Bookmark List Empty')
 
     oc = ObjectContainer(title2='My Bookmarks')
 
@@ -365,7 +359,7 @@ def MyBookmarks():
     if len(oc) > 0:
         return oc
     else:
-        return MessageContainer('Bookmarks', 'Bookmark List Empty')
+        return MC.message_container('Bookmarks', 'Bookmark List Empty')
 
 ####################################################################################################
 @route(PREFIX + '/directorylist', page=int)
@@ -378,7 +372,7 @@ def DirectoryList(title, href, page):
 
     if html.xpath('//h1[text()="No results"]'):
         search = url.split('/')[-1]
-        return MessageContainer('Search Warning',
+        return MC.message_container('Search Warning',
             'Sorry... your search for \"%s\" returned no videos. Repeat your search with another keyword. Search only works with english words.' %search)
 
     nextpg_node = html.xpath('//li[@class="next"]/a')
@@ -441,7 +435,7 @@ def VideoPage(video_info):
         header = video_info['title']
         message = 'This video is no longer available.'
     elif not match and video_removed:
-        return MessageContainer('Warning', 'This video is no longer available.')
+        return MC.message_container('Warning', 'This video is no longer available.')
 
     oc = ObjectContainer(title2=video_info['title'], header=header, message=message, no_cache=True)
 
@@ -547,17 +541,17 @@ def AddBookmark(video_info):
         Dict['Bookmarks'] = {video_info['id']: new_bookmark}
         Dict.Save()
 
-        return MessageContainer('Bookmarks',
+        return MC.message_container('Bookmarks',
                 '\"%s\" has been added to your bookmarks.' %video_info['title'])
     else:
         if video_info['url'] in bm.keys():
-            return MessageContainer('Warning',
+            return MC.message_container('Warning',
                 '\"%s\" is already in your bookmarks.' %video_info['title'])
         else:
             Dict['Bookmarks'].update({video_info['id']: new_bookmark})
             Dict.Save()
 
-            return MessageContainer('Bookmarks',
+            return MC.message_container('Bookmarks',
                 '\"%s\" has been added to your bookmarks.' %video_info['title'])
 
 ####################################################################################################
@@ -571,8 +565,8 @@ def RemoveBookmark(video_info):
         del Dict['Bookmarks'][video_info['id']]
         Dict.Save()
 
-        return MessageContainer('Remove Bookmark',
+        return MC.message_container('Remove Bookmark',
             '\"%s\" has been removed from your bookmarks.' %video_info['title'])
     else:
-        return MessageContainer('Remove Bookmark Error',
+        return MC.message_container('Remove Bookmark Error',
             'ERROR \"%s\" cannot be removed. The Bookmark does not exist!' %video_info['title'])
