@@ -4,6 +4,7 @@ ChangeLog
 ##### 1.0.7
 - _03/14/2016_
   - Fixed error in Categories
+  - Added new message handler, works with PHT and OpenPHT
 
 ##### 1.0.6
 - _02/08/2016_
