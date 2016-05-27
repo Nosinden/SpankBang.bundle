@@ -4,13 +4,13 @@
 #                                                                                                  #
 ####################################################################################################
 import messages
+import bookmarks
 from updater import Updater
 from DumbTools import DumbKeyboard
 
 TITLE = L('title')
 PREFIX = '/video/spankbang'
 BASE_URL = 'http://spankbang.com'
-CACHE_TIME = CACHE_1HOUR
 
 ICON = 'icon-default.png'
 ICON_BM = 'icon-bookmarks.png'
@@ -19,6 +19,9 @@ ICON_BM_REMOVE = 'icon-remove-bookmark.png'
 ICON_LIST = 'icon-list.png'
 ICON_POP = 'icon-popular.png'
 ICON_LIKED = 'icon-liked.png'
+ICON_VIDEO = 'icon-video.png'
+ICON_PHOTOALBUM = 'icon-photoalbum.png'
+ICON_PSTAR = 'icon-pornstar.png'
 ART = 'art-default.jpg'
 
 ORDER = [
@@ -39,10 +42,11 @@ SEARCH_LENGTH = [
     ]
 
 MC = messages.NewMessageContainer(PREFIX, TITLE)
+BM = bookmarks.Bookmark(TITLE, PREFIX, ICON_BM_ADD, ICON_BM_REMOVE)
 
 ####################################################################################################
 def Start():
-    HTTP.CacheTime = 0
+    HTTP.CacheTime = CACHE_1HOUR
 
     ObjectContainer.title1 = TITLE
     ObjectContainer.art = R(ART)
@@ -53,6 +57,17 @@ def Start():
     InputDirectoryObject.art = R(ART)
 
     VideoClipObject.art = R(ART)
+
+    PhotoAlbumObject.thumb = R(ICON_PHOTOALBUM)
+
+    # migrate old bookmarks to new bookmark class
+    if not Dict['bm_upgrade']:
+        if not Dict['Bookmarks']:
+            Dict['bm_upgrade'] = True
+        else:
+            migrate_old_bm_to_new()
+            Dict['bm_upgrade'] = True
+        Dict.Save()
 
 ####################################################################################################
 @handler(PREFIX, TITLE, thumb=ICON, art=ART)
@@ -123,7 +138,7 @@ def CategoryList(title):
 
     url = BASE_URL + '/categories'
 
-    html = HTML.ElementFromURL(url, cacheTime=CACHE_TIME)
+    html = HTML.ElementFromURL(url)
     for genre_node in html.xpath('//h1[text()="All porn categories"]/following-sibling::div[@class="categories"]/a'):
         chref = genre_node.get('href').split('?')[0]
         img = genre_node.xpath('./img')[0].get('src')
@@ -289,7 +304,7 @@ def SearchCategoryList(title, href):
         title='Any Category'))
 
     url = BASE_URL + href
-    html = HTML.ElementFromURL(url, cacheTime=CACHE_TIME)
+    html = HTML.ElementFromURL(url)
     title = title.replace('Categories', 'Category')
     for c in html.xpath('//p[@class="t cat tt"]/a'):
         chref = c.get('href').replace(' ', '%20')
@@ -334,32 +349,86 @@ def Search(query=''):
 @route(PREFIX + '/bookmarks')
 def MyBookmarks():
     """List Custom Bookmarks"""
+
     bm = Dict['Bookmarks']
     if not bm:
         return MC.message_container('Bookmarks', 'Bookmark List Empty')
 
-    oc = ObjectContainer(title2='My Bookmarks')
+    oc = ObjectContainer(title2='My Bookmarks', no_cache=True)
 
-    for b in sorted(Dict['Bookmarks'].keys()):
-        summary = bm[b]['summary']
-        video_info = {
-            'id': bm[b]['id'],
-            'title': bm[b]['title'],
-            'duration': bm[b]['duration'],
-            'thumb': bm[b]['thumb'],
-            'url': bm[b]['url']
-            }
-
-        oc.add(DirectoryObject(
-            key=Callback(VideoPage, video_info=video_info),
-            title=video_info['title'], summary=summary if summary else None,
-            tagline=str(Datetime.Delta(milliseconds=video_info['duration'])),
-            thumb=video_info['thumb']))
+    for key in sorted(bm.keys()):
+        if len(bm[key]) == 0:
+            del Dict['Bookmarks'][key]
+            Dict.Save()
+        else:
+            oc.add(DirectoryObject(
+                key=Callback(BookmarksSub, category=key),
+                title=key, summary='Display Pornstar Bookmarks',
+                thumb=R('icon-%s.png' %key.lower())
+                ))
 
     if len(oc) > 0:
         return oc
     else:
         return MC.message_container('Bookmarks', 'Bookmark List Empty')
+
+
+####################################################################################################
+@route(PREFIX + '/bookmark/sub')
+def BookmarksSub(category):
+    """List Bookmarks Alphabetically"""
+
+    bm = Dict['Bookmarks']
+    if not category in bm.keys():
+        return MC.message_container('Error',
+            '%s Bookmarks list is dirty, or no %s Bookmark list exist.' %(category, category))
+
+    oc = ObjectContainer(title2='My Bookmarks / %s' %category, no_cache=True)
+
+    for bookmark in sorted(bm[category], key=lambda k: k['title']):
+        title = bookmark['title']
+        thumb = bookmark['thumb']
+        href = bookmark['href']
+        item_id = bookmark['id']
+        duration = bookmark['duration']
+
+        if category == 'Video':
+            video_info = {
+                'id': item_id, 'title': title, 'duration': int(duration),
+                'thumb': thumb, 'url': BASE_URL + href, 'href': href, 'category': category
+                }
+            oc.add(DirectoryObject(
+                key=Callback(VideoPage, video_info=video_info),
+                title=title, thumb=thumb
+                ))
+        elif category == 'Pornstar':
+            oc.add(DirectoryObject(
+                key=Callback(PornstarPage, title=title, href=href, pid=item_id, thumb=thumb),
+                title=title, thumb=thumb
+                ))
+
+    if len(oc) > 0:
+        return oc
+    else:
+        return MC.message_container('Bookmarks', '%s Bookmarks list Empty' %category)
+
+####################################################################################################
+def migrate_old_bm_to_new():
+
+    bm = Dict['Bookmarks']
+    for b in sorted(bm.keys()):
+        url = bm[b]['url']
+        href = url.split(url.split('/')[2])[-1]
+        bid = bm[b]['id']
+        BM.add(
+            bm[b]['title'], href, bm[b]['thumb'], 'Video',
+            bid, bm[b]['duration'], bm[b]['summary']
+            )
+
+        if (True if bid in bm.keys() else False) if bm else False:
+            del Dict['Bookmarks'][bid]
+
+    return
 
 ####################################################################################################
 @route(PREFIX + '/directorylist', page=int)
@@ -368,7 +437,7 @@ def DirectoryList(title, href, page):
 
     url = BASE_URL + href
 
-    html = HTML.ElementFromURL(url, cacheTime=CACHE_TIME)
+    html = HTML.ElementFromURL(url)
 
     if html.xpath('//h1[text()="No results"]'):
         search = url.split('/')[-1]
@@ -385,7 +454,8 @@ def DirectoryList(title, href, page):
 
     for node in html.xpath('//div[@class="video-list video-rotate"]/div[@class="video-item"]'):
         a_node = node.xpath('./a')[0]
-        vhref = BASE_URL + a_node.get('href')
+        vhref = a_node.get('href')
+        vurl = BASE_URL + vhref
         thumb = 'http:' + a_node.xpath('./img/@src')[0]
         name = a_node.xpath('./img/@alt')[0].strip()
         hd_node = a_node.xpath('./span[@class="i-hd"]')
@@ -393,15 +463,12 @@ def DirectoryList(title, href, page):
             vtitle = name + ' (HD)'
         else:
             vtitle = name
-        duration = 60000 * int(node.xpath('./ul/li')[0].text_content().strip())
+        duration = 60000 * int(a_node.xpath('./span[@class="i-len"]')[0].text_content().strip())
         vid = vhref.split('/')[-1]
 
         video_info = {
-            'id': vid,
-            'title': vtitle,
-            'duration': duration,
-            'thumb': thumb,
-            'url': vhref
+            'id': vid, 'title': vtitle, 'duration': duration, 'thumb': thumb,
+            'href': vhref, 'url': vurl, 'category': 'Video'
             }
 
         oc.add(DirectoryObject(key=Callback(VideoPage, video_info=video_info), title=vtitle, thumb=thumb))
@@ -423,12 +490,12 @@ def VideoPage(video_info):
     Includes Similar Videos and Bookmark Option
     """
 
-    html = HTML.ElementFromURL(video_info['url'], cacheTime=CACHE_TIME)
+    html = HTML.ElementFromURL(video_info['url'])
 
     bm = Dict['Bookmarks']
     header = None
     message = None
-    match = ((True if video_info['id'] in bm else False) if bm else False)
+    match = BM.bookmark_exist(item_id=video_info['id'], category='Video')
     video_removed = html.xpath('//div[@id="video_removed"]')
 
     if match and video_removed:
@@ -441,64 +508,75 @@ def VideoPage(video_info):
 
     if not video_removed:
         for node in html.xpath('//section[@class="details"]'):
-            summary_node = node.xpath('.//p/text()')
-            if len(summary_node) > 1:
-                summary = summary_node[1].strip()
-                if summary == 'Category:':
-                    summary = ''
-            else:
-                summary = ''
-            video_info.update({'summary': summary})
-            video_info.update({'genres': node.xpath('.//p[@class="cat"]/a/text()')})
+            if not 'summary' in video_info.keys():
+                summary = 'NA'
+                summary_node = node.xpath('.//p/text()')
+                if len(summary_node) > 1:
+                    temp_summary = summary_node[1].strip()
+                    if temp_summary != 'Category:':
+                        summary = temp_summary
+                video_info.update({'summary': summary})
+            if not 'genres' in video_info.keys():
+                video_info.update({'genres': node.xpath('.//a[contains(@href, "/category/")]/text()')})
 
         oc.add(VideoClipObject(
-            title=video_info['title'],
-            summary=video_info['summary'],
-            genres=video_info['genres'],
-            duration=video_info['duration'],
-            thumb=video_info['thumb'],
-            url=video_info['url']))
+            title=video_info['title'], summary=video_info['summary'], genres=video_info['genres'],
+            duration=video_info['duration'], thumb=video_info['thumb'], url=video_info['url']
+            ))
+
+        oc.add(PhotoAlbumObject(
+            key=Callback(PhotoBin, title=video_info['title'], thumb=video_info['thumb'], url=video_info['url']),
+            rating_key = video_info['url']+'/thumbs', source_title='SpankBang',
+            title='Video Thumbs', art=R(ART)
+            ))
 
 
     similar_node = html.xpath('//div[@class="video-similar video-rotate"]')
     if similar_node:
-        for i, node in enumerate(similar_node[0].xpath('./div[@class="video-item"]')):
+        info = []
+        for node in similar_node[0].xpath('./div[@class="video-item"]'):
             a_node = node.xpath('./a')[0]
-            vhref = BASE_URL + a_node.get('href')
+            vhref = a_node.get('href')
+            vurl = BASE_URL + vhref
             vid = vhref.split('/')[-1]
             thumb = 'http:' + a_node.xpath('./img/@src')[0]
             name = a_node.xpath('./img/@alt')[0].strip()
             duration = 1000 * int(a_node.xpath('./span[@class="len"]/text()')[0].strip())
+
             hd_node = node.xpath('./span[@class="i-hd"]')
             if hd_node:
                 name = name + ' (HD)'
 
-            if i == 0:
-                info = [{
-                    'id': vid, 'title': name, 'duration': duration,
-                    'thumb': thumb, 'url': vhref}]
-            else:
-                info.append({
-                    'id': vid, 'title': name, 'duration': duration,
-                    'thumb': thumb, 'url': vhref})
+            info.append({
+                'id': vid, 'title': name, 'duration': duration, 'thumb': thumb,
+                'url': vurl, 'href': vhref, 'category': 'Video'
+                })
+
         oc.add(DirectoryObject(
             key=Callback(SimilarVideos, title='Similar Videos', info=info),
             title='Similar Videos', thumb=info[0]['thumb']))
 
-    if match:
-        oc.add(DirectoryObject(
-            key=Callback(RemoveBookmark, video_info=video_info),
-            title='Remove Bookmark',
-            summary='Remove \"%s\" from your Bookmarks list.' %video_info['title'],
-            thumb=R(ICON_BM_REMOVE)
-            ))
-    else:
-        oc.add(DirectoryObject(
-            key=Callback(AddBookmark, video_info=video_info),
-            title='Add Bookmark',
-            summary='Add \"%s\" to your Bookmarks list.' %video_info['title'],
-            thumb=R(ICON_BM_ADD)
-            ))
+    pstar_list = html.xpath('//a[contains(@href, "/pornstar/")]')
+    if pstar_list:
+        plstar = []
+        for ps in pstar_list:
+            pnstar = ps.text
+            phstar = ps.get('href')
+            plstar.append((pnstar, phstar))
+        if len(plstar) == 1:
+            pid = String.Quote(plstar[0][0].lower(), usePlus=True)
+            pthumb = HTTP.Request('http://www.cliphunter.com/a/modelthumb?name=%s' %pid).content
+            oc.add(DirectoryObject(
+                key=Callback(PornstarPage, title=plstar[0][0], href=plstar[0][1], pid=pid, thumb=pthumb),
+                title=plstar[0][0], thumb=pthumb
+                ))
+        elif len(plstar) > 1:
+            oc.add(DirectoryObject(
+                key=Callback(PornstarList, title=video_info['title'], plstar=plstar),
+                title='Pornstars', thumb=R(ICON_PSTAR)
+                ))
+
+    BM.add_remove_bookmark(oc, dict(video_info))
 
     return oc
 
@@ -512,61 +590,76 @@ def SimilarVideos(title, info):
     for item in info:
         oc.add(DirectoryObject(
             key=Callback(VideoPage, video_info=item),
-            title=item['title'], thumb=item['thumb']))
+            title=item['title'], thumb=item['thumb']
+            ))
 
     return oc
 
 ####################################################################################################
-@route(PREFIX + '/addbookmark', video_info=dict)
-def AddBookmark(video_info):
-    """Add Bookmark"""
+@route(PREFIX + '/pstar/list', plstar=list)
+def PornstarList(title, plstar):
+    """Display Adult stars in video"""
 
-    html = HTML.ElementFromURL(video_info['url'], cacheTime=CACHE_TIME)
+    oc = ObjectContainer(title2='Pornstars in %s' %title)
+    for n, h in plstar:
+        pid = String.Quote(n.lower(), usePlus=True)
+        pthumb = HTTP.Request('http://www.cliphunter.com/a/modelthumb?name=%s' %pid).content
+        oc.add(DirectoryObject(
+            key=Callback(PornstarPage, title=n, href=h, pid=pid, thumb=pthumb),
+            title=n, thumb=pthumb
+            ))
 
-    bm = Dict['Bookmarks']
-    summary = ''
-    genres = ''
-    if video_info['genres']:
-        genres = ' '.join([g.replace(' ', '_') for g in video_info['genres']])
-    if video_info['summary']:
-        summary = video_info['summary']
-
-    new_bookmark = {
-        'id': video_info['id'], 'url': video_info['url'], 'title': video_info['title'],
-        'duration': video_info['duration'], 'summary': summary,
-        'genres': genres, 'thumb': video_info['thumb']
-        }
-
-    if not bm:
-        Dict['Bookmarks'] = {video_info['id']: new_bookmark}
-        Dict.Save()
-
-        return MC.message_container('Bookmarks',
-                '\"%s\" has been added to your bookmarks.' %video_info['title'])
-    else:
-        if video_info['url'] in bm.keys():
-            return MC.message_container('Warning',
-                '\"%s\" is already in your bookmarks.' %video_info['title'])
-        else:
-            Dict['Bookmarks'].update({video_info['id']: new_bookmark})
-            Dict.Save()
-
-            return MC.message_container('Bookmarks',
-                '\"%s\" has been added to your bookmarks.' %video_info['title'])
+    return oc
 
 ####################################################################################################
-@route(PREFIX + '/removebookmark', video_info=dict)
-def RemoveBookmark(video_info):
-    """Remove Bookmark from Bookmark Dictionary"""
+@route(PREFIX + '/pstar/page')
+def PornstarPage(title, href, pid, thumb):
+    """Link to video list and bookmark option"""
 
-    bm = Dict['Bookmarks']
+    oc = ObjectContainer(title2=title, no_cache=True)
 
-    if (True if video_info['id'] in bm.keys() else False) if bm else False:
-        del Dict['Bookmarks'][video_info['id']]
-        Dict.Save()
+    oc.add(DirectoryObject(
+        key=Callback(DirectoryList, title='Videos', href=href, page=1),
+        title='Videos', thumb=R(ICON_VIDEO)
+        ))
 
-        return MC.message_container('Remove Bookmark',
-            '\"%s\" has been removed from your bookmarks.' %video_info['title'])
+    info = {
+        'title': title, 'thumb': thumb, 'href': href, 'category': 'Pornstar',
+        'id': pid, 'duration': 'NA', 'summary': 'NA'
+        }
+
+    BM.add_remove_bookmark(oc, dict(info))
+
+    return oc
+
+####################################################################################################
+@route(PREFIX + '/video/thumbs/bin')
+def PhotoBin(title, thumb, url):
+    """Create PhotoAlbum for photos in href"""
+
+    oc = ObjectContainer(title2=title)
+    html = HTML.ElementFromURL(url)
+    for img in html.xpath('//figure[@class="thumbnails"]/img'):
+        src = img.get('src')
+        title = img.get('title')
+        oc.add(CreatePhotoObject(
+            title=title.replace('Watch from ', ''),
+            url=src if src.startswith('http') else ('http:' + src)
+            ))
+    return oc
+
+####################################################################################################
+@route(PREFIX + '/create/photo/object', include_container=bool)
+def CreatePhotoObject(title, url, include_container=False, *args, **kwargs):
+    """create photo object"""
+
+    photo_object = PhotoObject(
+        key=Callback(CreatePhotoObject, title=title, url=url, include_container=True),
+        rating_key=url, source_title='SpankBang', title=title, thumb=url, art=R(ART),
+        items=[MediaObject(parts=[PartObject(key=url)])]
+        )
+
+    if include_container:
+        return ObjectContainer(objects=[photo_object])
     else:
-        return MC.message_container('Remove Bookmark Error',
-            'ERROR \"%s\" cannot be removed. The Bookmark does not exist!' %video_info['title'])
+        return photo_object
