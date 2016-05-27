@@ -1,6 +1,12 @@
 ChangeLog
 =========
 
+##### 1.0.8
+- _05/27/2016_
+  - Fixed ServiceCode category error, was pulling more info other than categories
+  - Updated Bookmarks to include new Adult Star section
+  - Added new Video thumbs, Adult Star in video section (if info available), and ability to bookmark Adult Stars
+
 ##### 1.0.7
 - _03/14/2016_
   - Fixed error in Categories
