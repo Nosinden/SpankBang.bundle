@@ -32,7 +32,7 @@ def MetadataObjectForURL(url):
                 summary = None
         else:
             summary = None
-        genres = node.xpath('.//p[@class="cat"]/a/text()')
+        genres = node.xpath('.//a[contains(@href, "/category/")]/text()')
 
     thumb = html.xpath('//meta[@property="og:image"]/@content')[0]
     art = '/:/plugins/com.plexapp.plugins.spankbang/resources/art-default.jpg?t=%s' %time_stamp
@@ -50,7 +50,8 @@ def MetadataObjectForURL(url):
         genres=genres,
         content_rating='X',
         thumb=thumb,
-        art=art)
+        art=art,
+        source_title='SpankBang')
 
     return vco
 
