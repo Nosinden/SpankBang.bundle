@@ -69,7 +69,7 @@ def MediaObjectsForURL(url):
 
     fmt_list = []
     mo = []
-    bit_dict = {'720p': 1442, '480p': 665, '240p': 141}
+    bit_dict = {'1080p': 3500, '720p': 1442, '480p': 665, '240p': 141}
 
     for fmt_text in html.xpath('//div[@class="player_wrapper"]/nav[@class="toolbar"]/ul/li/@class'):
         if 'q_' in fmt_text:
