@@ -1,6 +1,11 @@
 ChangeLog
 =========
 
+##### 1.0.9
+- _07/03/2016_
+  - Updated resolution dictionary within ServiceCode
+  - Corrected bitrates for hosted content
+
 ##### 1.0.8
 - _05/27/2016_
   - Fixed ServiceCode category error, was pulling more info other than categories
