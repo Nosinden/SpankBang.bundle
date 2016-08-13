@@ -53,18 +53,19 @@ def MediaObjectsForURL(url):
 
     fmt_list = []
     mo = []
-    bit_dict = {'1080p': 1800, '720p': 1200, '480p': 750, '360p': 500, '240p': 120}
+    bit_dict = {'super': 1800, 'high': 1200, 'medium': 750, 'low': 120}
+    resolution_dict = {'super': '1080p', 'high': '720p', 'medium': '480p', 'low': '240p'}
 
     for fmt_text in html.xpath('//div[@class="player_wrapper"]/nav[@class="toolbar"]/ul/li/@class'):
         if 'q_' in fmt_text:
             fmt_list.append(fmt_text.replace('q_', '').strip())
     if not fmt_list:
-        fmt_list.append('480p')
+        fmt_list.append('medium')
 
     for fmt in fmt_list:
         mo.append(MediaObject(
-            parts=[PartObject(key=Callback(PlayVideo, url=url, fmt=fmt))],
-            video_resolution=fmt[:-1],
+            parts=[PartObject(key=Callback(PlayVideo, url=url, fmt=resolution_dict[fmt]))],
+            video_resolution=resolution_dict[fmt][:-1],
             bitrate=bit_dict[fmt],
             container=Container.MP4,
             video_codec=VideoCodec.H264,
