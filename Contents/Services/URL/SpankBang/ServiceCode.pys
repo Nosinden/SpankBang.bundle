@@ -3,18 +3,7 @@
 """SpankBang Service Code"""
 
 ####################################################################################################
-def NormalizeURL(url):
-    """This function should return a 'normalised' version of the given URL. Plex uses the URL"""
-
-    return url
-
-####################################################################################################
 def MetadataObjectForURL(url):
-    """
-    This function should create and return a metadata object (for example, a VideoClipOb-
-    ject) and populate it with metadata from the given URL. Only the metadata should be
-    added here - the object's key and rating_key properties will be synthesised based on the URL.
-    """
 
     Log.Debug('*' * 80)
     Log.Debug('* MetadataObjectForURL   = %s' %url)
@@ -57,11 +46,6 @@ def MetadataObjectForURL(url):
 
 ####################################################################################################
 def MediaObjectsForURL(url):
-    """
-    This function should create and return a list of media objects and part objects representing
-    the media available at the given URL. Callbacks may be used if obtaining the final media
-    location requires additional computation.
-    """
 
     Log.Debug('* MediaObjectsForURL     = %s' %url)
 
@@ -69,7 +53,7 @@ def MediaObjectsForURL(url):
 
     fmt_list = []
     mo = []
-    bit_dict = {'1080p': 3500, '720p': 1442, '480p': 665, '240p': 141}
+    bit_dict = {'1080p': 1800, '720p': 1200, '480p': 750, '360p': 500, '240p': 120}
 
     for fmt_text in html.xpath('//div[@class="player_wrapper"]/nav[@class="toolbar"]/ul/li/@class'):
         if 'q_' in fmt_text:
@@ -86,7 +70,8 @@ def MediaObjectsForURL(url):
             video_codec=VideoCodec.H264,
             audio_codec=AudioCodec.AAC,
             audio_channels=2,
-            optimized_for_streaming=True))
+            optimized_for_streaming=True
+            ))
 
     return mo
 
