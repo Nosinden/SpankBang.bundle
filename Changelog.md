@@ -1,9 +1,14 @@
 ChangeLog
 =========
 
+##### 1.0.10
+- _08/13/2016_
+  - `ServiceCode` - updated resolution dictionary [pull#3](https://github.com/Nosinden/SpankBang.bundle/pull/3)
+  - `ServiceCode` - cleaned/simplified `PlayVideo` code
+
 ##### 1.0.9
 - _07/03/2016_
-  - Updated resolution dictionary within ServiceCode
+  - Updated resolution dictionary within `ServiceCode`
   - Corrected bitrates for hosted content
 
 ##### 1.0.8

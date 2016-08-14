@@ -6,7 +6,7 @@
 def MetadataObjectForURL(url):
 
     Log.Debug('*' * 80)
-    Log.Debug('* MetadataObjectForURL   = %s' %url)
+    Log.Debug(u'* MetadataObjectForURL   = {}'.format(url))
 
     html = HTML.ElementFromURL(url)
     time_stamp = int(Datetime.TimestampFromDatetime(Datetime.Now()))
@@ -26,13 +26,13 @@ def MetadataObjectForURL(url):
     thumb = html.xpath('//meta[@property="og:image"]/@content')[0]
     art = '/:/plugins/com.plexapp.plugins.spankbang/resources/art-default.jpg?t=%s' %time_stamp
 
-    Log.Debug('* title                  = %s' %title)
-    Log.Debug('* duration               = %i' %duration)
-    Log.Debug('* genres                 = %s' %genres)
-    Log.Debug('* summary                = %s' %summary)
+    Log.Debug(u'* title                 = {}'.format(title))
+    Log.Debug(u'* duration              = {}'.format(duration))
+    Log.Debug(u'* genres                = {}'.format(genres))
+    Log.Debug(u'* summary               = {}'.format(summary))
     Log.Debug('*' * 80)
 
-    vco = VideoClipObject(
+    return VideoClipObject(
         title=title,
         summary=summary,
         duration=duration,
@@ -40,32 +40,31 @@ def MetadataObjectForURL(url):
         content_rating='X',
         thumb=thumb,
         art=art,
-        source_title='SpankBang')
-
-    return vco
+        source_title='SpankBang'
+        )
 
 ####################################################################################################
 def MediaObjectsForURL(url):
 
-    Log.Debug('* MediaObjectsForURL     = %s' %url)
+    Log.Debug(u'* MediaObjectsForURL    = {}'.format(url))
 
     html = HTML.ElementFromURL(url)
 
-    fmt_list = []
-    mo = []
+    fmt_list = list()
+    mo = list()
     bit_dict = {'super': 1800, 'high': 1200, 'medium': 750, 'low': 120}
-    resolution_dict = {'super': '1080p', 'high': '720p', 'medium': '480p', 'low': '240p'}
+    res_dict = {'super': '1080p', 'high': '720p', 'medium': '480p', 'low': '240p'}
 
-    for fmt_text in html.xpath('//div[@class="player_wrapper"]/nav[@class="toolbar"]/ul/li/@class'):
-        if 'q_' in fmt_text:
-            fmt_list.append(fmt_text.replace('q_', '').strip())
+    for fmt_text in html.xpath('//ul/li[text()="Quality:"]/following-sibling::li[starts-with(@class, "q_")]/@class'):
+        fmt_list.append(fmt_text.replace('q_', '').strip())
+
     if not fmt_list:
         fmt_list.append('medium')
 
     for fmt in fmt_list:
         mo.append(MediaObject(
-            parts=[PartObject(key=Callback(PlayVideo, url=url, fmt=resolution_dict[fmt]))],
-            video_resolution=resolution_dict[fmt][:-1],
+            parts=[PartObject(key=Callback(PlayVideo, url=url, fmt=res_dict[fmt]))],
+            video_resolution=res_dict[fmt][:-1],
             bitrate=bit_dict[fmt],
             container=Container.MP4,
             video_codec=VideoCodec.H264,
@@ -78,33 +77,16 @@ def MediaObjectsForURL(url):
 
 ####################################################################################################
 def PlayVideo(url, fmt, **kwargs):
-    """Format the video url depending of version"""
+    """Format the video url depending of format"""
 
-    html = HTML.ElementFromURL(url)
+    page = HTTP.Request(url).content
 
-    Log.Debug('*' * 80)
+    rkey = Regex(r'var\s*?stream\_key\s*?\=\s*?[\'\"]([^\'\"\;]+)[\'\"]').search(page)
+    rid = Regex(r'var\s*?stream\_id\s*?\=\s*?[\'\"]([^\'\"\;]+)[\'\"]').search(page)
 
-    data = {}
-    for node in html.xpath('//script[@type="text/javascript"]'):
-        j_text = node.text_content()
-        j_test = Regex('var\ stream_key').search(j_text)
-        if j_test:
-            j_node = j_text.split(';')
-            for item in j_node:
-                if 'stream_key' in item:
-                    data.update({'stream_key': Regex('\'(.+?)\'').search(item).group(1)})
-                elif 'stream_id' in item:
-                    data.update({'stream_id': Regex('\'(.+?)\'').search(item).group(1)})
+    if rkey and rid:
+        video_url = 'http://spankbang.com/_{}/{}/title/{}__mp4'.format(rid.group(1), rkey.group(1), fmt)
+        Log.Debug('* PlayVideo URL          = {}'.format(video_url))
+        return Redirect(video_url)
 
-    Log.Debug('* data       = %s' %data)
-
-    video_url = 'http://spankbang.com/_%s/%s/title/%s__mp4' %(data['stream_id'], data['stream_key'], fmt)
-
-    Log.Debug('* video_url  = %s' %video_url)
-    if not data['stream_id']:
-        Log.Error('* Stream Id not found')
-        Log.Debug('*' * 80)
-        raise Ex.MediaNotAvailable
-    Log.Debug('*' * 80)
-
-    return Redirect(video_url)
+    raise Ex.MediaNotAvailable
