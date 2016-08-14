@@ -475,9 +475,8 @@ def DirectoryList(title, href, page):
 
     if nextpg_node:
         href = nextpg_node[0].get('href')
-        nextpg = int(href.split('/')[-2])
         oc.add(NextPageObject(
-            key=Callback(DirectoryList, title=title, href=href, page=nextpg),
+            key=Callback(DirectoryList, title=title, href=href, page=page+1),
             title='Next Page>>'))
 
     return oc
