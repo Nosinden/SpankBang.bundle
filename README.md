@@ -12,7 +12,6 @@ This plugin creates a new channel within [Plex Media Server](https://plex.tv/) (
 - Update from within channel
 
 ## How To Install
-- This channel can be installed via [WebTools.bundle](https://github.com/dagalufh/WebTools.bundle) or manually follow the directions below.
 - Install via [WebTools](https://forums.plex.tv/discussion/126254/rel-webtools-2-0/p1#Discussion_126254) _UASv2_ or follow manual directions below.
 - [Download](http://github.com/Nosinden/SpankBang.bundle/releases) the latest release and install it by following the Plex [instructions](https://support.plex.tv/hc/en-us/articles/201187656-How-do-I-manually-install-a-channel-) or the instructions below.
   - Unzip and rename the folder to **SpankBang.bundle**
