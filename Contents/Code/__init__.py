@@ -8,7 +8,7 @@ import bookmarks
 from updater import Updater
 from DumbTools import DumbKeyboard
 
-TITLE = L('title')
+TITLE = 'SpankBang'
 PREFIX = '/video/spankbang'
 BASE_URL = 'http://spankbang.com'
 
@@ -16,12 +16,16 @@ ICON = 'icon-default.png'
 ICON_BM = 'icon-bookmarks.png'
 ICON_BM_ADD = 'icon-add-bookmark.png'
 ICON_BM_REMOVE = 'icon-remove-bookmark.png'
-ICON_LIST = 'icon-list.png'
+ICON_CAT = 'icon-category.png'
 ICON_POP = 'icon-popular.png'
+ICON_TREND = 'icon-trending.png'
+ICON_NEW = 'icon-newest.png'
+ICON_TIME = 'icon-time.png'
+ICON_STAR = 'icon-star.png'
 ICON_LIKED = 'icon-liked.png'
 ICON_VIDEO = 'icon-video.png'
 ICON_PHOTOALBUM = 'icon-photoalbum.png'
-ICON_PSTAR = 'icon-pornstar.png'
+ICON_SEARCH = 'icon-search.png'
 ART = 'art-default.jpg'
 
 ORDER = [
@@ -79,55 +83,38 @@ def MainMenu():
     Updater(PREFIX + '/updater', oc)
 
     oc.add(DirectoryObject(
-        key=Callback(MainList, title='Explore'), title='Explore', thumb=R(ICON_LIST)
-        ))
+        key=Callback(CategoryList, title='Categories'), title='Categories', thumb=R(ICON_CAT)))
     oc.add(DirectoryObject(
-        key=Callback(MainList, title='Popular Videos'), title='Popular Videos', thumb=R(ICON_POP)
-        ))
+        key=Callback(DirectoryList, title='Trending', href='/trending_videos/', page=1),
+        title='Trending', thumb=R(ICON_TREND)))
     oc.add(DirectoryObject(
-        key=Callback(MainList, title='Most Liked Videos'),
-        title='Most Liked Videos', thumb=R(ICON_LIKED)
-        ))
+        key=Callback(DirectoryList, title='New', href='/new_videos/', page=1),
+        title='New', thumb=R(ICON_NEW)))
+    oc.add(DirectoryObject(
+        key=Callback(PeriodList, title='Popular', href='/most_popular/?'),
+        title='Popular', thumb=R(ICON_POP)))
+    oc.add(DirectoryObject(
+        key=Callback(PeriodList, title='Most Liked', href='/top_rated/?'),
+        title='Most Liked', thumb=R(ICON_LIKED)))
+    oc.add(DirectoryObject(
+        key=Callback(PeriodList, title='Longest', href='/longest_videos/?'),
+        title='Longest', thumb=R(ICON_TIME)))
+    oc.add(DirectoryObject(
+        key=Callback(PornstarsList, href='/pornstars', page=1),
+        title='Pornstars', thumb=R(ICON_STAR)))
+
     oc.add(DirectoryObject(key=Callback(MyBookmarks), title='My Bookmarks', thumb=R(ICON_BM)))
 
     if Client.Product in DumbKeyboard.clients:
-        DumbKeyboard(PREFIX, oc, Search, dktitle='Search', dkthumb=R('icon-search.png'))
+        DumbKeyboard(PREFIX, oc, Search, dktitle='Search', dkthumb=R(ICON_SEARCH))
     else:
         oc.add(InputDirectoryObject(
             key=Callback(Search),
             title='Search', summary='Search SpankBang',
-            prompt='Search for...', thumb=R('icon-search.png')
+            prompt='Search for...', thumb=R(ICON_SEARCH)
             ))
 
     return oc
-
-####################################################################################################
-@route(PREFIX + '/mainlist')
-def MainList(title):
-    """Create sub list for Explore, Popular Videos, and Most liked Videos"""
-
-    oc = ObjectContainer(title2=title)
-
-    if title == 'Explore':
-        oc.add(DirectoryObject(
-            key=Callback(CategoryList, title='%s | Categories' %title), title='Categories'))
-        oc.add(DirectoryObject(
-            key=Callback(DirectoryList, title='%s | New Videos' %title, href='/new_videos/', page=1),
-            title='New Videos'))
-        oc.add(DirectoryObject(
-            key=Callback(DirectoryList, title='%s | Hot & Trending Videos' %title, href='/trending_videos/', page=1),
-            title='Hot & Trending Videos'))
-        oc.add(DirectoryObject(
-            key=Callback(PeriodList, title='%s | Longest Videos' %title, href='/longest_videos/?'),
-            title='Longest Videos'))
-
-        return oc
-    elif title == 'Popular Videos':
-        href = '/most_popular/?'
-    elif title == 'Most Liked Videos':
-        href = '/top_rated/?'
-
-    return PeriodList(title=title, href=href)
 
 ####################################################################################################
 @route(PREFIX + '/categorylist')
@@ -147,6 +134,53 @@ def CategoryList(title):
             key=Callback(HDOptList, title='Category | %s' %name, href=chref),
             title=name, summary='%s Genre List ' %name, thumb=BASE_URL + img
             ))
+
+    return oc
+
+####################################################################################################
+@route(PREFIX + '/pornstars/list', page=int)
+def PornstarsList(href, page):
+    oc = ObjectContainer(title2='Pornstars')
+    html = HTML.ElementFromURL(BASE_URL + href)
+    for a in html.xpath('//a[contains(@href, "/pornstar/")]'):
+        if a.xpath('./img'):
+            title = a.xpath('./img/@title')[0].strip()
+            thumb = a.xpath('./img/@src')[0]
+            thumb = 'http:' + thumb if thumb.startswith('//') else thumb
+
+            views = a.xpath('.//span[@class="views"]/text()')[0].strip()
+            videos = a.xpath('.//span[@class="videos"]/text()')[0].strip()
+
+            oc.add(DirectoryObject(
+                key=Callback(PornstarPage, title=title, href=a.get('href'), pid=String.Quote(title, True), thumb=thumb),
+                title=title, thumb=thumb, tagline="{} Views, {} Videos".format(views, videos)))
+    if len(oc) != 0:
+        nextpg = html.xpath('//li[@class="next"]/a')
+        if nextpg:
+            npage = page+1
+            oc.add(NextPageObject(
+                key=Callback(PornstarsList, href=nextpg[0].get('href'), page=npage),
+                title='Page {} >>'.format(npage)))
+    return oc
+
+####################################################################################################
+@route(PREFIX + '/pornstar/page')
+def PornstarPage(title, href, pid, thumb):
+    """Link to video list and bookmark option"""
+
+    oc = ObjectContainer(title2=title, no_cache=True)
+
+    oc.add(DirectoryObject(
+        key=Callback(DirectoryList, title='Videos', href=href, page=1),
+        title='Videos', thumb=R(ICON_VIDEO)
+        ))
+
+    info = {
+        'title': title, 'thumb': thumb, 'href': href, 'category': 'Pornstar',
+        'id': pid, 'duration': 'NA', 'summary': 'NA'
+        }
+
+    BM.add_remove_bookmark(oc, dict(info))
 
     return oc
 
@@ -364,14 +398,12 @@ def MyBookmarks():
             oc.add(DirectoryObject(
                 key=Callback(BookmarksSub, category=key),
                 title=key, summary='Display Pornstar Bookmarks',
-                thumb=R('icon-%s.png' %key.lower())
+                thumb=R(ICON_STAR) if key.lower() == 'pornstar' else R('icon-%s.png' %key.lower())
                 ))
 
     if len(oc) > 0:
         return oc
-    else:
-        return MC.message_container('Bookmarks', 'Bookmark List Empty')
-
+    return MC.message_container('Bookmarks', 'Bookmark List Empty')
 
 ####################################################################################################
 @route(PREFIX + '/bookmark/sub')
@@ -409,8 +441,7 @@ def BookmarksSub(category):
 
     if len(oc) > 0:
         return oc
-    else:
-        return MC.message_container('Bookmarks', '%s Bookmarks list Empty' %category)
+    return MC.message_container('Bookmarks', '%s Bookmarks list Empty' %category)
 
 ####################################################################################################
 def migrate_old_bm_to_new():
@@ -450,7 +481,7 @@ def DirectoryList(title, href, page):
     else:
         main_title = '%s | Page %i' %(title, page) if nextpg_node else '%s | Page %i | Last Page' %(title, page)
 
-    oc = ObjectContainer(title2=main_title)
+    oc = ObjectContainer(title2=main_title, view_group='Coverflow')
 
     for node in html.xpath('//div[@class="video-list video-rotate"]/div[@class="video-item"]'):
         a_node = node.xpath('./a')[0]
@@ -520,7 +551,7 @@ def VideoPage(video_info):
 
         oc.add(VideoClipObject(
             title=video_info['title'], summary=video_info['summary'], genres=video_info['genres'],
-            duration=video_info['duration'], thumb=video_info['thumb'], url=video_info['url']
+            duration=video_info['duration'], thumb=video_info['thumb'], url=video_info['url'],
             ))
 
         oc.add(PhotoAlbumObject(
@@ -572,7 +603,7 @@ def VideoPage(video_info):
         elif len(plstar) > 1:
             oc.add(DirectoryObject(
                 key=Callback(PornstarList, title=video_info['title'], plstar=plstar),
-                title='Pornstars', thumb=R(ICON_PSTAR)
+                title='Pornstars', thumb=R(ICON_STAR)
                 ))
 
     BM.add_remove_bookmark(oc, dict(video_info))
@@ -611,27 +642,6 @@ def PornstarList(title, plstar):
     return oc
 
 ####################################################################################################
-@route(PREFIX + '/pstar/page')
-def PornstarPage(title, href, pid, thumb):
-    """Link to video list and bookmark option"""
-
-    oc = ObjectContainer(title2=title, no_cache=True)
-
-    oc.add(DirectoryObject(
-        key=Callback(DirectoryList, title='Videos', href=href, page=1),
-        title='Videos', thumb=R(ICON_VIDEO)
-        ))
-
-    info = {
-        'title': title, 'thumb': thumb, 'href': href, 'category': 'Pornstar',
-        'id': pid, 'duration': 'NA', 'summary': 'NA'
-        }
-
-    BM.add_remove_bookmark(oc, dict(info))
-
-    return oc
-
-####################################################################################################
 @route(PREFIX + '/video/thumbs/bin')
 def PhotoBin(title, thumb, url):
     """Create PhotoAlbum for photos in href"""
@@ -645,6 +655,7 @@ def PhotoBin(title, thumb, url):
             title=title.replace('Watch from ', ''),
             url=src if src.startswith('http') else ('http:' + src)
             ))
+
     return oc
 
 ####################################################################################################
@@ -660,5 +671,4 @@ def CreatePhotoObject(title, url, include_container=False, *args, **kwargs):
 
     if include_container:
         return ObjectContainer(objects=[photo_object])
-    else:
-        return photo_object
+    return photo_object
