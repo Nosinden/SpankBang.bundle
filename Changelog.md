@@ -1,6 +1,14 @@
 ChangeLog
 =========
 
+##### 1.1.0
+- _08/26/2016_
+  - New icons/art
+  - New Adult star section
+  - Updated UI to match main site
+  - Fixed pagination logic [pull#4](https://github.com/Nosinden/SpankBang.bundle/pull/4)
+  - `DumbTools` - added _Xbox One_ & _Apple TV v4_
+
 ##### 1.0.10
 - _08/13/2016_
   - `ServiceCode` - updated resolution dictionary [pull#3](https://github.com/Nosinden/SpankBang.bundle/pull/3)
