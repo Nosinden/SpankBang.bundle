@@ -481,7 +481,7 @@ def DirectoryList(title, href, page):
     else:
         main_title = '%s | Page %i' %(title, page) if nextpg_node else '%s | Page %i | Last Page' %(title, page)
 
-    oc = ObjectContainer(title2=main_title, view_group='Coverflow')
+    oc = ObjectContainer(title2=main_title)
 
     for node in html.xpath('//div[@class="video-list video-rotate"]/div[@class="video-item"]'):
         a_node = node.xpath('./a')[0]
